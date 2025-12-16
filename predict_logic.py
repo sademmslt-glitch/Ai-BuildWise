@@ -14,9 +14,9 @@ def safe_load_model(path):
     except Exception:
         return None
 
-cost_model = safe_load_model("cost_model.pkl")
+cost_model = safe_load_model("cost_model 2.pkl")
 delay_model = safe_load_model("delay_prediction_model.pkl")
-model_columns = safe_load_model("model_columns.pkl")
+model_columns = safe_load_model("model_columns 2.pkl")
 
 # =================================================
 # HELPER FUNCTIONS
