@@ -33,65 +33,58 @@ def classify_risk(delay_prob):
         return "High"
 
 # =================================================
-# SMART, SHORT & DATA-BASED RECOMMENDATIONS
+# SMART, SIMPLE & DATA-BASED RECOMMENDATIONS
 # =================================================
 def generate_recommendations(area, workers, duration, risk):
     recs = []
 
-    # تقدير منطقي تقريبي
-    ideal_workers = area / 40          # عامل لكل ~40 م²
-    ideal_duration = area / 120        # شهر لكل ~120 م²
+    # قيم مرجعية مبنية على حجم المشروع
+    ideal_workers = area / 40        # تقريبًا عامل لكل 40 م²
+    ideal_duration = area / 120      # تقريبًا شهر لكل 120 م²
 
-    workers_gap = int(round(ideal_workers - workers))
+    workers_gap = round(ideal_workers - workers)
     duration_gap = round(ideal_duration - duration, 1)
 
     # ---------------- HIGH RISK ----------------
     if risk == "High":
-
         if workers_gap > 0 and duration_gap > 0:
             recs.append(
                 f"الخطر مرتفع لأن عدد العمال ({workers}) والمدة ({duration} أشهر) أقل من المناسب لحجم المشروع. "
-                f"يُفضّل زيادة العمال إلى حوالي {workers + workers_gap + 1} "
-                f"وتمديد المدة إلى نحو {round(duration + duration_gap + 0.5,1)} أشهر."
+                f"يُفضّل رفع عدد العمال إلى حوالي {workers + workers_gap + 1} "
+                f"وزيادة المدة إلى قرابة {round(duration + duration_gap + 0.5,1)} أشهر لتقليل خطر التأخير."
             )
-
         elif workers_gap > 0:
             recs.append(
                 f"الخطر مرتفع بسبب قلة عدد العمال ({workers}). "
-                f"زيادة العمال إلى حوالي {workers + workers_gap + 1} قد تقلل احتمال التأخير."
+                f"رفع العدد إلى حوالي {workers + workers_gap + 1} قد يساعد على الالتزام بالجدول."
             )
-
         elif duration_gap > 0:
             recs.append(
-                f"الخطر مرتفع لأن مدة التنفيذ ({duration} أشهر) قصيرة. "
-                f"تمديد المدة إلى نحو {round(duration + duration_gap + 0.5,1)} أشهر قد يحسّن الالتزام بالجدول."
+                f"الخطر مرتفع لأن مدة التنفيذ ({duration} أشهر) قصيرة نسبيًا. "
+                f"تمديد المدة إلى نحو {round(duration + duration_gap + 0.5,1)} أشهر قد يقلل التأخير."
             )
-
         else:
             recs.append(
-                "الخطر مرتفع بسبب ضغط عام في تنفيذ المشروع، "
-                "ويُفضّل تعزيز الموارد أو الجدول لتقليل المخاطرة."
+                "الخطر مرتفع بسبب ضغط عام في الموارد والجدول، "
+                "وأي تعزيز بسيط قد يُحدث فرقًا إيجابيًا."
             )
 
     # ---------------- MEDIUM RISK ----------------
     elif risk == "Medium":
-
         if workers_gap > 0:
             recs.append(
                 f"الخطر متوسط لأن عدد العمال ({workers}) قريب من الحد الأدنى. "
                 f"إضافة عامل واحد قد يخفض مستوى الخطر."
             )
-
         elif duration_gap > 0:
             recs.append(
-                f"الخطر متوسط لأن المدة ({duration} أشهر) ضيقة نسبيًا. "
-                f"تمديد المدة بنحو نصف شهر إلى شهر قد يجعل الخطة أكثر أمانًا."
+                f"الخطر متوسط لأن مدة المشروع ({duration} أشهر) ضيقة نسبيًا. "
+                f"زيادة المدة بنحو نصف شهر إلى شهر قد تجعل الخطة أكثر استقرارًا."
             )
-
         else:
             recs.append(
-                "الخطر متوسط لأن التوازن بين المدة وعدد العمال دقيق. "
-                "أي تعديل بسيط في أحدهما قد يقلل احتمال التأخير."
+                "الخطر متوسط لأن التوازن بين عدد العمال والمدة حساس، "
+                "وتعديل بسيط في أحدهما قد يقلل احتمال التأخير."
             )
 
     # ---------------- LOW RISK ----------------
@@ -103,7 +96,7 @@ def generate_recommendations(area, workers, duration, risk):
     return recs
 
 # =================================================
-# FALLBACK LOGIC (NO ML)
+# FALLBACK LOGIC (في حال غياب النموذج)
 # =================================================
 def rule_based_cost(area, project_size):
     base_rate = 1200
@@ -124,9 +117,10 @@ def rule_based_delay(area, workers, duration):
 # =================================================
 def predict(project_type, project_size, area_m2, duration_months, workers):
 
-    # ---------------- COST ----------------
+    # ---------------- COST PREDICTION ----------------
     if cost_model and model_columns:
         X = np.zeros(len(model_columns))
+
         for i, col in enumerate(model_columns):
             if col == "area_m2":
                 X[i] = area_m2
@@ -143,8 +137,8 @@ def predict(project_type, project_size, area_m2, duration_months, workers):
     else:
         estimated_cost = rule_based_cost(area_m2, project_size)
 
-    # ---------------- DELAY ----------------
-    if delay_model and model_columns:
+    # ---------------- DELAY PREDICTION ----------------
+    if delay_model:
         base_delay = float(delay_model.predict_proba([X])[0][1] * 100)
     else:
         base_delay = rule_based_delay(area_m2, workers, duration_months)
